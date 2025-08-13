@@ -124,9 +124,6 @@ export default function PradoWrites() {
           </button>
 
           <nav className="flex items-center gap-3 text-sm">
-            <button className="hover:opacity-80" onClick={() => { setActive(null); setPanel("archive"); }}>Arquivo</button>
-            <button className="hover:opacity-80" onClick={() => { setActive(null); setPanel("about"); }}>Sobre</button>
-            <button className="hover:opacity-80" onClick={() => { setActive(null); setPanel("contact"); }}>Contato</button>
             <button onClick={() => setDarkMode((v) => !v)} className="hover:opacity-80" aria-label="Alternar tema">
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -192,50 +189,7 @@ export default function PradoWrites() {
 }
 
 function getPanel(kind, posts) {
-  if (kind === "about") {
-    return (
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Sobre</h2>
-        <p>PradoWrites é um canal pessoal...</p>
-      </div>
-    );
-  }
-  if (kind === "contact") {
-    return (
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Contato</h2>
-        <a className="inline-flex items-center gap-2 underline hover:no-underline" href="mailto:contato@pradowrites.com">
-          <Mail size={16} /> contato@pradowrites.com
-        </a>
-      </div>
-    );
-  }
-  if (kind === "archive") {
-    return (
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Arquivo</h2>
-        <ul className="space-y-3">
-          {posts.map((p) => (
-            <li key={p.slug} className="flex items-center justify-between">
-              <span className="opacity-80 text-sm">{formatDate(p.date)}</span>
-              <span className="flex-1 mx-3 truncate">{p.title}</span>
-              <a
-                href={`#${p.slug}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  const evt = new CustomEvent("open-post", { detail: p.slug });
-                  window.dispatchEvent(evt);
-                }}
-                className="text-sm underline hover:no-underline inline-flex items-center gap-1"
-              >
-                Abrir <ExternalLink size={14} />
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
+  
   return null;
 }
 
