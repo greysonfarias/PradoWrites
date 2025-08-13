@@ -1,5 +1,5 @@
-### TL;DR
+# MVRV e leitura de ciclos
 
-- MVRV sintetiza valor de mercado vs. valor realizado.
-- Faixas históricas sugerem zonas de risco/oportunidade.
-- Regressão nas máximas do MVRV → *heurística*, não oráculo.
+Este artigo contém um dashboard interativo para visualização em tempo real.
+
+[**Abrir Dashboard**](https://pradowrites.vercel.app/mvrv)  
