@@ -103,6 +103,13 @@ export default function PradoWrites() {
   const [panel, setPanel] = useState(null); // 'about' | 'contact' | 'archive' | null
   const [query, setQuery] = useState("");
   const [darkMode, setDarkMode] = useState(true);
+  // Simple hash-based routing to allow linking to the dashboard from Markdown
+  const [route, setRoute] = useState(typeof window !== "undefined" ? window.location.hash : "");
+  useEffect(() => {
+    const onHash = () => setRoute(window.location.hash || "");
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const [posts, setPosts] = useState(FALLBACK_POSTS);
   const [contentMap, setContentMap] = useState({}); // { slug: mdString }
@@ -180,6 +187,7 @@ export default function PradoWrites() {
             <button className="hover:opacity-80" onClick={() => { setActive(null); setPanel("archive"); }}>Arquivo</button>
             <button className="hover:opacity-80" onClick={() => { setActive(null); setPanel("about"); }}>Sobre</button>
             <button className="hover:opacity-80" onClick={() => { setActive(null); setPanel("contact"); }}>Contato</button>
+            <button onClick={() => { window.location.hash = "/mvrv"; }} className="hover:opacity-80">Dashboard</button>
             <button onClick={() => setDarkMode((v) => !v)} className="hover:opacity-80" aria-label="Alternar tema">
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -189,73 +197,86 @@ export default function PradoWrites() {
 
       {/* Main */}
       <main className="mx-auto max-w-3xl px-4 py-10">
-        {!active && (
-          <div className={theme.searchBox}>
-            <Search size={18} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por título, tag ou trecho..."
-              className={theme.input}
-            />
-          </div>
-        )}
-
-        {/* Listing */}
-        {!active && !panel && (
-          <ul className="space-y-8">
-            {results.map((post) => (
-              <li key={post.slug} className="group">
-                <button
-                  onClick={() => setActive(post.slug)}
-                  className="text-left w-full"
-                >
-                  <motion.h2 layout className="text-xl font-semibold tracking-tight group-hover:underline">
-                    {post.title}
-                  </motion.h2>
-                  <div className="text-xs opacity-70 mt-1">{formatDate(post.date)} · {post.tags?.join(" · ")}</div>
-                  <p className="opacity-90 mt-2">{post.excerpt}</p>
-                </button>
-              </li>
-            ))}
-
-            {results.length === 0 && (
-              <p className="opacity-70">Nada encontrado. Tente outros termos.</p>
-            )}
-          </ul>
-        )}
-
-        {/* Post view */}
-        {activePost && (
-          <article className="max-w-2xl">
-            <button onClick={() => setActive(null)} className="inline-flex items-center gap-2 text-sm mb-6 hover:opacity-80">
-              <ArrowLeft size={16} /> Voltar
-            </button>
-            <h1 className="text-2xl font-semibold leading-tight tracking-tight">{activePost.title}</h1>
-            <div className="text-xs opacity-70 mt-1">{formatDate(activePost.date)} · {activePost.tags?.join(" · ")}</div>
-            <div className="mt-6">
-              {activePost.slug === "mvrv-e-ciclos" ? (
-                <div className="rounded-xl overflow-hidden border border-neutral-900/40">
-                  <BitcoinDashboardPhase5Visual />
-                </div>
-              ) : (
-                <>
-                  {loadingPost && <p className="opacity-70 text-sm">Carregando…</p>}
-                  {!loadingPost && <Markdown text={activeContent || ""} invert={darkMode} />}
-                </>
-              )}
+        {route === "#/mvrv" ? (
+          // DASHBOARD PAGE (opened via Markdown link [Abrir Dashboard](#/mvrv))
+          <article className="max-w-full">
+            <h1 className="text-2xl font-semibold leading-tight tracking-tight mb-2">Dashboard • MVRV</h1>
+            <div className="text-xs opacity-70 mb-4">Visão interativa • atualiza a cada 60s</div>
+            <div className="rounded-xl overflow-hidden border border-neutral-900/40">
+              <BitcoinDashboardPhase5Visual />
             </div>
           </article>
-        )}
+        ) : (
+          <>
+            {!active && (
+              <div className={theme.searchBox}>
+                <Search size={18} />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar por título, tag ou trecho..."
+                  className={theme.input}
+                />
+              </div>
+            )}
 
-        {/* Panels */}
-        <AnimatePresence>
-          {panel && (
-            <Overlay onClose={() => setPanel(null)} darkMode={darkMode}>
-              {getPanel(panel, posts)}
-            </Overlay>
-          )}
-        </AnimatePresence>
+            {/* Listing */}
+            {!active && !panel && (
+              <ul className="space-y-8">
+                {results.map((post) => (
+                  <li key={post.slug} className="group">
+                    <button
+                      onClick={() => setActive(post.slug)}
+                      className="text-left w-full"
+                    >
+                      <motion.h2 layout className="text-xl font-semibold tracking-tight group-hover:underline">
+                        {post.title}
+                      </motion.h2>
+                      <div className="text-xs opacity-70 mt-1">{formatDate(post.date)} · {post.tags?.join(" · ")}</div>
+                      <p className="opacity-90 mt-2">{post.excerpt}</p>
+                    </button>
+                  </li>
+                ))}
+
+                {results.length === 0 && (
+                  <p className="opacity-70">Nada encontrado. Tente outros termos.</p>
+                )}
+              </ul>
+            )}
+
+            {/* Post view */}
+            {activePost && (
+              <article className="max-w-2xl">
+                <button onClick={() => setActive(null)} className="inline-flex items-center gap-2 text-sm mb-6 hover:opacity-80">
+                  <ArrowLeft size={16} /> Voltar
+                </button>
+                <h1 className="text-2xl font-semibold leading-tight tracking-tight">{activePost.title}</h1>
+                <div className="text-xs opacity-70 mt-1">{formatDate(activePost.date)} · {activePost.tags?.join(" · ")}</div>
+                <div className="mt-6">
+                  {activePost.slug === "mvrv-e-ciclos" ? (
+                    <div className="rounded-xl overflow-hidden border border-neutral-900/40">
+                      <BitcoinDashboardPhase5Visual />
+                    </div>
+                  ) : (
+                    <>
+                      {loadingPost && <p className="opacity-70 text-sm">Carregando…</p>}
+                      {!loadingPost && <Markdown text={activeContent || ""} invert={darkMode} />}
+                    </>
+                  )}
+                </div>
+              </article>
+            )}
+
+            {/* Panels */}
+            <AnimatePresence>
+              {panel && (
+                <Overlay onClose={() => setPanel(null)} darkMode={darkMode}>
+                  {getPanel(panel, posts)}
+                </Overlay>
+              )}
+            </AnimatePresence>
+          </>
+        )}
       </main>
 
       {/* Footer */}
