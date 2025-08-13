@@ -1,0 +1,26 @@
+[
+  {
+    "slug": "manifesto",
+    "title": "Manifesto do PradoWrites",
+    "date": "2025-08-12",
+    "excerpt": "Por que escrever, o que publicar aqui e como pretendo manter este canal vivo.",
+    "tags": ["meta", "introducao"],
+    "mdPath": "/posts/manifesto.md"
+  },
+  {
+    "slug": "operacao-e-estrategia",
+    "title": "Notas rápidas sobre Operação e Estratégia",
+    "date": "2025-08-10",
+    "excerpt": "Um snapshot prático: indicadores que realmente movem a agulha no dia a dia.",
+    "tags": ["gestao", "kpi"],
+    "mdPath": "/posts/operacao-e-estrategia.md"
+  },
+  {
+    "slug": "mvrv-e-ciclos",
+    "title": "MVRV e leitura de ciclos",
+    "date": "2025-08-06",
+    "excerpt": "Resumo da abordagem de regressão sobre MVRV e picos de ciclo, para consulta rápida.",
+    "tags": ["bitcoin", "dados"],
+    "mdPath": "/posts/mvrv-e-ciclos.md"
+  }
+]
