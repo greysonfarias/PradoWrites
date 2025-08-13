@@ -3,22 +3,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Mail, ArrowLeft, ExternalLink, Sun, Moon } from "lucide-react";
 
 // ------------------------------------------------------
-// PradoWrites – Minimal Blog
-// Fix: define useSearch hook (and pure searchPosts) to avoid
-// ReferenceError. Added light/dark toggle with persistence
-// and basic dev test cases for searchPosts.
+// PradoWrites – Minimal Blog (MD posts)
+// Mudança: posts agora vêm de /public/posts/index.json com conteúdo
+// em arquivos .md individuais. Mantém fallback local se não houver
+// arquivos ainda. Inclui cache simples de conteúdo.
 // ------------------------------------------------------
 
-// Sample posts (you can replace later)
-const POSTS = [
+// Fallback local caso /posts/index.json não exista ainda
+const FALLBACK_POSTS = [
   {
     slug: "manifesto",
     title: "Manifesto do PradoWrites",
     date: "2025-08-12",
     excerpt:
       "Por que escrever, o que publicar aqui e como pretendo manter este canal vivo.",
-    content: `# Manifesto\n\nEste é o meu espaço público para ideias cruas, ensaios curtos e rascunhos estratégicos. Vou priorizar:\n\n- Objetividade\n- Clareza de pensamento\n- Aprendizados reais de operações e produto\n\nPublico *em construção*. Feedbacks são bem-vindos.`,
     tags: ["meta", "introducao"],
+    mdPath: "/posts/manifesto.md",
   },
   {
     slug: "operacao-e-estrategia",
@@ -26,8 +26,8 @@ const POSTS = [
     date: "2025-08-10",
     excerpt:
       "Um snapshot prático: indicadores que realmente movem a agulha no dia a dia.",
-    content: `## Indicadores que importam\n\n1. Margem de contribuição real (por contrato e por mês)\n2. Fluxo de caixa projetado (12 semanas)\n3. Roadmap de recursos (capacidade x demanda)\n\n> Se não dá para medir em uma tela, está complexo demais.`,
     tags: ["gestao", "kpi"],
+    mdPath: "/posts/operacao-e-estrategia.md",
   },
   {
     slug: "mvrv-e-ciclos",
@@ -35,8 +35,8 @@ const POSTS = [
     date: "2025-08-06",
     excerpt:
       "Resumo da abordagem de regressão sobre MVRV e picos de ciclo, para consulta rápida.",
-    content: `### TL;DR\n\n- MVRV sintetiza valor de mercado vs. valor realizado.\n- Faixas históricas sugerem zonas de risco/oportunidade.\n- Regressão nas máximas do MVRV → *heurística*, não oráculo.`,
     tags: ["bitcoin", "dados"],
+    mdPath: "/posts/mvrv-e-ciclos.md",
   },
 ];
 
@@ -50,21 +50,22 @@ function formatDate(iso) {
 }
 
 // Pure function for testing and reuse
-export function searchPosts(posts, q) {
+export function searchPosts(posts, q, contentMap) {
   if (!q) return posts;
   const query = q.toLowerCase();
   return posts.filter((p) => {
     const inTitle = p.title.toLowerCase().includes(query);
-    const inExcerpt = p.excerpt.toLowerCase().includes(query);
+    const inExcerpt = (p.excerpt || "").toLowerCase().includes(query);
     const inTags = Array.isArray(p.tags) && p.tags.some((t) => String(t).toLowerCase().includes(query));
-    const inContent = p.content && p.content.toLowerCase().includes(query);
+    const content = contentMap?.[p.slug] || "";
+    const inContent = content.toLowerCase().includes(query);
     return inTitle || inExcerpt || inTags || inContent;
   });
 }
 
 // Hook wrapper with memoization
-function useSearch(posts, query) {
-  return useMemo(() => searchPosts(posts, query), [posts, query]);
+function useSearch(posts, query, contentMap) {
+  return useMemo(() => searchPosts(posts, query, contentMap), [posts, query, contentMap]);
 }
 
 function Markdown({ text, invert }) {
@@ -102,6 +103,10 @@ export default function PradoWrites() {
   const [query, setQuery] = useState("");
   const [darkMode, setDarkMode] = useState(true);
 
+  const [posts, setPosts] = useState(FALLBACK_POSTS);
+  const [contentMap, setContentMap] = useState({}); // { slug: mdString }
+  const [loadingPost, setLoadingPost] = useState(false);
+
   // Initialize theme from localStorage or system preference
   useEffect(() => {
     try {
@@ -117,19 +122,35 @@ export default function PradoWrites() {
     try { localStorage.setItem("theme", darkMode ? "dark" : "light"); } catch {}
   }, [darkMode]);
 
-  // Listen to custom event from Archive open links
+  // Fetch posts index from /public/posts/index.json if available
   useEffect(() => {
-    const handler = (e) => {
-      const slug = e.detail;
-      setPanel(null);
-      setActive(slug);
-    };
-    window.addEventListener("open-post", handler);
-    return () => window.removeEventListener("open-post", handler);
+    let cancelled = false;
+    fetch("/posts/index.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data) && data.length) setPosts(data);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
-  const results = useSearch(POSTS, query);
-  const activePost = active ? POSTS.find((p) => p.slug === active) : null;
+  // Load content for active post if not cached
+  useEffect(() => {
+    if (!active) return;
+    if (contentMap[active]) return;
+    const meta = posts.find((p) => p.slug === active);
+    if (!meta) return;
+    const path = meta.mdPath || `/posts/${meta.slug}.md`;
+    setLoadingPost(true);
+    fetch(path)
+      .then((r) => (r.ok ? r.text() : "# Conteúdo não encontrado"))
+      .then((txt) => setContentMap((m) => ({ ...m, [meta.slug]: txt })))
+      .finally(() => setLoadingPost(false));
+  }, [active, posts, contentMap]);
+
+  const results = useSearch(posts, query, contentMap);
+  const activePost = active ? posts.find((p) => p.slug === active) : null;
+  const activeContent = activePost ? contentMap[activePost.slug] : "";
 
   const theme = {
     page: darkMode ? "min-h-screen bg-neutral-950 text-neutral-100" : "min-h-screen bg-neutral-100 text-neutral-900",
@@ -212,7 +233,8 @@ export default function PradoWrites() {
             <h1 className="text-2xl font-semibold leading-tight tracking-tight">{activePost.title}</h1>
             <div className="text-xs opacity-70 mt-1">{formatDate(activePost.date)} · {activePost.tags?.join(" · ")}</div>
             <div className="mt-6">
-              <Markdown text={activePost.content} invert={darkMode} />
+              {loadingPost && <p className="opacity-70 text-sm">Carregando…</p>}
+              {!loadingPost && <Markdown text={activeContent || ""} invert={darkMode} />}
             </div>
           </article>
         )}
@@ -221,7 +243,7 @@ export default function PradoWrites() {
         <AnimatePresence>
           {panel && (
             <Overlay onClose={() => setPanel(null)} darkMode={darkMode}>
-              {getPanel(panel)}
+              {getPanel(panel, posts)}
             </Overlay>
           )}
         </AnimatePresence>
@@ -235,7 +257,7 @@ export default function PradoWrites() {
   );
 }
 
-function getPanel(kind) {
+function getPanel(kind, posts) {
   if (kind === "about") {
     return (
       <div className="space-y-4">
@@ -273,7 +295,7 @@ function getPanel(kind) {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Arquivo</h2>
         <ul className="space-y-3">
-          {POSTS.map((p) => (
+          {posts.map((p) => (
             <li key={p.slug} className="flex items-center justify-between">
               <span className="opacity-80 text-sm">{formatDate(p.date)}</span>
               <span className="flex-1 mx-3 truncate">{p.title}</span>
@@ -325,20 +347,20 @@ function Overlay({ children, onClose, darkMode }) {
 }
 
 // ------------------------------------------------------
-// Dev tests for searchPosts
+// Dev tests for searchPosts and index fallbacks
 // ------------------------------------------------------
 function runDevTests() {
-  // Only in browser
   if (typeof window === "undefined") return;
   const samples = [
-    { title: "Teste A", excerpt: "foo bar", tags: ["alpha"], content: "lorem" },
-    { title: "MVRV explained", excerpt: "bitcoin metric", tags: ["bitcoin"], content: "mvrv details" },
-    { title: "Gestão", excerpt: "KPIs e margem", tags: ["kpi", "gestao"], content: "indicadores" },
+    { slug: "a", title: "Teste A", excerpt: "foo bar", tags: ["alpha"], mdPath: "/posts/a.md" },
+    { slug: "mvrv", title: "MVRV explained", excerpt: "bitcoin metric", tags: ["bitcoin"], mdPath: "/posts/mvrv.md" },
+    { slug: "gestao", title: "Gestão", excerpt: "KPIs e margem", tags: ["kpi", "gestao"], mdPath: "/posts/gestao.md" },
   ];
+  const contents = { mvrv: "mvrv details" };
   console.assert(searchPosts(samples, "").length === 3, "searchPosts: vazio retorna todos");
-  console.assert(searchPosts(samples, "mvrv").length === 1, "searchPosts: encontra por título ou conteúdo");
-  console.assert(searchPosts(samples, "kpi").length === 1, "searchPosts: encontra por tag");
-  console.assert(searchPosts(samples, "inexistente").length === 0, "searchPosts: termo inexistente");
+  console.assert(searchPosts(samples, "mvrv", contents).length === 1, "searchPosts: encontra por conteúdo carregado");
+  console.assert(searchPosts(samples, "kpi", contents).length === 1, "searchPosts: encontra por tag");
+  console.assert(searchPosts(samples, "inexistente", contents).length === 0, "searchPosts: termo inexistente");
 }
 
 runDevTests();
