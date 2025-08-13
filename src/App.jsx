@@ -183,7 +183,7 @@ export default function PradoWrites() {
         </AnimatePresence>
       </main>
 
-      <footer className={theme.footer}>© {new Date().getFullYear()} PradoWrites · Feito com React.</footer>
+      <footer className={theme.footer}>© {new Date().getFullYear()} PradoWrites</footer>
     </div>
   );
 }
