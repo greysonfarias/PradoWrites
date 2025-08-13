@@ -2,7 +2,7 @@
 
 Este é o meu espaço público para ideias cruas, ensaios curtos e rascunhos estratégicos. Vou priorizar:
 
-- Objetividade
+- Objetividade...
 - Clareza de pensamento
 - Aprendizados reais de operações e produto
 
