@@ -1,9 +1,8 @@
 # Manifesto
 
-Este é o meu espaço público para ideias cruas, ensaios curtos e rascunhos estratégicos. Vou priorizar:
+Este é o meu espaço público para ideias cruas, ensaios curtos e rascunhos. Vou priorizar:
 
-- Objetividade...
-- Clareza de pensamento
-- Aprendizados reais de operações e produto
+- Experimentação
+- Subjetividade
+- Aprendizados incompletos
 
-Publico *em construção*. Feedbacks são bem-vindos.
